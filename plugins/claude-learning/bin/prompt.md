@@ -12,7 +12,7 @@ Review the feed thoroughly.
 
 This review is not only about errors. It must improve how Claude Code collaborates with this developer.
 
-Analyze five layers:
+Analyze six layers:
 
 ## 1. Execution/tooling problems
 
@@ -26,7 +26,22 @@ Find:
 * avoidable environment mistakes;
 * bad assumptions about git, gh, permissions, shell, setup, scripts, or repo structure.
 
-## 2. Misunderstanding patterns
+## 2. Tool-use waste
+
+Find cases where tool calls consumed context or time without earning their keep:
+
+* files read but never referenced in the response (unused reads);
+* same file read more than once in a session when the content hadn't changed;
+* oversized reads where only a small portion of the result was used (e.g. reading 200 lines when 5 were needed);
+* `find`/`ls`/`grep` fan-outs to locate something that had a direct known path;
+* speculative tool calls made "just in case" with no resulting action;
+* large Bash output returned and ignored;
+* parallel or sequential reads of multiple files when only one was consulted;
+* searches returning large result sets where only 1–2 items were relevant.
+
+For each waste finding, estimate rough cost: number of redundant calls or approximate lines of unused output.
+
+## 3. Misunderstanding patterns
 
 Find:
 
@@ -38,7 +53,7 @@ Find:
 * cases where Claude asked unnecessary questions;
 * cases where Claude missed context already provided.
 
-## 3. User working style
+## 4. User working style
 
 Infer the developer's working preferences from evidence only:
 
@@ -51,7 +66,7 @@ Infer the developer's working preferences from evidence only:
 
 Do not invent personality traits. Only include insights supported by the feed.
 
-## 4. Future operating rules
+## 5. Future operating rules
 
 Turn findings into concrete rules Claude should follow:
 
@@ -63,7 +78,7 @@ Turn findings into concrete rules Claude should follow:
 * multi-repo behavior;
 * when to ask vs when to proceed.
 
-## 5. Proposed changes
+## 6. Proposed changes
 
 Propose ready-to-apply changes only. Do not edit anything.
 
@@ -94,7 +109,17 @@ Each finding must include:
 * impact;
 * suggested fix.
 
-### B. Misunderstanding/user-correction findings
+### B. Tool-use waste findings
+
+Use IDs `W1`, `W2`, etc.
+Each finding must include:
+
+* what was wasted (tool name + what it returned);
+* concrete example or quote from the feed;
+* estimated cost (redundant calls or ~lines of unused output);
+* leaner alternative.
+
+### C. Misunderstanding/user-correction findings
 
 Use IDs `M1`, `M2`, etc.
 Each finding must include:
@@ -103,7 +128,7 @@ Each finding must include:
 * example or quote from the feed;
 * better future behavior.
 
-### C. User working-style findings
+### D. User working-style findings
 
 Use IDs `S1`, `S2`, etc.
 Each finding must include:
