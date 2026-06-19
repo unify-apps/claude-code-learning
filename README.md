@@ -21,9 +21,9 @@ compact.py (free)  →  claude -p review  →  ~/.claude/retro/conversation-revi
 
 ## Install
 
-### Option 1 — Claude Code plugin (recommended)
+### Step 1 — Add the plugin (inside Claude Code)
 
-Add the Unifyapps marketplace once inside Claude Code:
+Run these three commands inside Claude Code:
 
 ```
 /plugin marketplace add unify-apps/claude-code-learning
@@ -31,22 +31,24 @@ Add the Unifyapps marketplace once inside Claude Code:
 /reload-plugins
 ```
 
-`/claude-learning:review-conversations` is available immediately. Hooks are registered automatically.
+`/claude-learning:review-conversations` is now available. Use it any time for an on-demand review.
 
-Then run this once in terminal to enable the daily background review and token setup (~2 min):
+### Step 2 — Enable automatic daily review (normal terminal)
+
+Open your normal terminal (not Claude Code) and run:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/unify-apps/claude-code-learning/main/setup.sh)
 ```
 
-### Option 2 — setup.sh only (no plugin)
+The script walks you through everything interactively:
+- Installs background scripts and hooks
+- Sets up the macOS daily LaunchAgent
+- Guides you through generating and pasting your auth token
 
-```bash
-git clone https://github.com/unify-apps/claude-code-learning.git /tmp/cl
-bash /tmp/cl/setup.sh
-```
+**Token step:** the script runs `claude setup-token` right in the same terminal window. A token starting with `sk-ant-oat...` will appear — copy it and paste it at the prompt that follows. The script explains each step before it happens.
 
-`setup.sh` handles everything in one interactive flow — scripts, hooks, LaunchAgent, token, and a self-check at the end.
+> Skip Step 2 if you only want on-demand reviews via `/claude-learning:review-conversations`.
 
 ## Verify
 

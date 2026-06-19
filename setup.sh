@@ -115,19 +115,38 @@ PY
 )
     if [[ -n "$existing_tok" && "$existing_tok" != "REPLACE_THIS_WITH_YOUR_TOKEN" ]]; then
         echo "  ✓ token already configured — skipping"
-    else
-        echo "── token setup (enables AI review) ─────────────────────────────────────────"
-        echo "  Generating a long-lived auth token for headless claude…"
-        echo "  ────────────────────────────────────────────────────────"
-        claude setup-token
-        echo "  ────────────────────────────────────────────────────────"
+    elif ! command -v claude >/dev/null 2>&1; then
+        echo "── token setup — claude CLI not found ──────────────────────────────────────"
+        echo "  The AI review needs the claude CLI to be installed."
         echo
-        printf "  Paste the token above (hidden, won't echo): "
+        echo "  Install it:  npm install -g @anthropic-ai/claude-code"
+        echo "  Then re-run: bash <(curl -fsSL https://raw.githubusercontent.com/unify-apps/claude-code-learning/main/setup.sh)"
+        echo
+    else
+        echo "── token setup ─────────────────────────────────────────────────────────────"
+        echo "  The background review calls claude headlessly (without the app open)."
+        echo "  This needs a long-lived token — different from your normal Claude login."
+        echo
+        echo "  What happens next:"
+        echo "  1. 'claude setup-token' runs below in this same terminal"
+        echo "  2. It may open a browser to confirm your Claude account — do that, then"
+        echo "     return to this terminal"
+        echo "  3. A token starting with sk-ant-oat... will appear in the output"
+        echo "  4. Copy that token and paste it at the prompt that follows"
+        echo
+        printf "  Press Enter to continue: "
+        read -r _
+        echo
+        echo "  ── running claude setup-token ──────────────────────────────────────────"
+        claude setup-token
+        echo "  ── token output ends above ─────────────────────────────────────────────"
+        echo
+        printf "  Paste the sk-ant-oat... token here (hidden, won't echo): "
         IFS= read -r -s token; echo
         if [[ -z "$token" ]]; then
-            echo "  • skipped — run 'bash setup.sh' again to set the token later."
+            echo "  • skipped — re-run this script any time to set the token."
         elif [[ "$token" != sk-ant-oat* ]]; then
-            echo "  ✗ token should start with 'sk-ant-oat' — run 'bash setup.sh' again to retry." >&2
+            echo "  ✗ token should start with 'sk-ant-oat' — re-run this script to retry." >&2
         else
             python3 - "$GLOBAL_LOCAL" "$token" <<'PY'
 import json, os, sys
@@ -136,7 +155,7 @@ try: data = json.load(open(path))
 except (FileNotFoundError, json.JSONDecodeError): data = {}
 data.setdefault("env", {})["CLAUDE_CODE_OAUTH_TOKEN"] = token
 with open(path, "w") as fh: json.dump(data, fh, indent=2); fh.write("\n")
-print("  ✓ token written")
+print("  ✓ token written — automatic review is fully enabled")
 PY
         fi
     fi
