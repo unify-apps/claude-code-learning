@@ -9,6 +9,7 @@ This is not only a tooling/error review. It should also learn my conversation st
 Default behavior:
 
 * Run `python3 ~/.claude/retro/compact.py`
+* If that path is missing, fall back to `python3 compact.py` (available on PATH via the plugin's bin/).
 * This reads every conversation since the last reviewed checkpoint, capped at 14 days.
 * It writes `~/.claude/retro/conversations-<date>.md`.
 * Read the generated file in full. Do not sample.
@@ -16,7 +17,6 @@ Default behavior:
 * If I ask for a specific window, such as "review the last 7 days", run:
   `python3 ~/.claude/retro/compact.py --days N`
   This is an ad-hoc review and must not move the checkpoint.
-* If `compact.py` is missing, run `bash setup.sh` from the `claude-code-learning` repo, then retry.
 * Fallback only if needed: read raw `~/.claude/projects/**/*.jsonl`, largest-first, and clearly state what was covered.
 
 Review the conversations for these layers:
@@ -33,7 +33,22 @@ Find concrete issues in how Claude Code worked:
 * wrong assumptions about repo layout, setup, environment, permissions, or tools;
 * slow or overcomplicated workflows.
 
-## 2. Misunderstanding patterns
+## 2. Tool-use waste
+
+Find cases where tool calls consumed context or time without earning their keep:
+
+* files read but never referenced in the response (unused reads);
+* same file read more than once in a session when the content hadn't changed;
+* oversized reads where only a small portion of the result was used (e.g. reading 200 lines when 5 were needed);
+* `find`/`ls`/`grep` fan-outs to locate something that had a direct known path;
+* speculative tool calls made "just in case" with no resulting action;
+* large Bash output returned and ignored;
+* parallel or sequential reads of multiple files when only one was consulted;
+* searches returning large result sets where only 1–2 items were relevant.
+
+For each waste finding, estimate rough cost: number of redundant calls or approximate lines of unused output.
+
+## 3. Misunderstanding patterns
 
 Find where Claude misunderstood me:
 
@@ -45,7 +60,7 @@ Find where Claude misunderstood me:
 * places where Claude asked instead of making a reasonable best-effort assumption;
 * places where Claude missed context from earlier in the same conversation.
 
-## 3. My working style
+## 4. My working style
 
 Infer how I prefer to work, based only on evidence from the conversations:
 
@@ -59,7 +74,7 @@ Infer how I prefer to work, based only on evidence from the conversations:
 
 Do not invent personality claims. Only include style insights supported by examples.
 
-## 4. Better future behavior
+## 5. Better future behavior
 
 Convert the review into practical operating rules:
 
@@ -73,7 +88,7 @@ Convert the review into practical operating rules:
 * how Claude should handle debugging tasks;
 * how Claude should handle planning tasks.
 
-## 5. Memory candidates
+## 6. Memory candidates
 
 Identify what should be remembered going forward, split into:
 
@@ -110,7 +125,17 @@ Each finding must include:
 * impact;
 * suggested fix.
 
-### B. Misunderstanding/user-correction findings
+### B. Tool-use waste findings
+
+Each finding must include:
+
+* ID, like `W1`;
+* what was wasted (tool name + what it returned);
+* concrete example or quote;
+* estimated cost (redundant calls or ~lines of unused output);
+* leaner alternative.
+
+### C. Misunderstanding/user-correction findings
 
 Each finding must include:
 
@@ -119,7 +144,7 @@ Each finding must include:
 * concrete example or quote;
 * what Claude should do differently next time.
 
-### C. User working-style findings
+### D. User working-style findings
 
 Each finding must include:
 
