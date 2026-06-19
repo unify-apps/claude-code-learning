@@ -13,6 +13,7 @@ GLOBAL_SETTINGS="$HOME/.claude/settings.json"
 GLOBAL_LOCAL="$HOME/.claude/settings.local.json"
 COMMANDS_DST="$HOME/.claude/commands"
 INTERACTIVE=0; [[ -t 0 ]] && INTERACTIVE=1
+REPO_RAW="https://raw.githubusercontent.com/unify-apps/claude-code-learning/main"
 
 echo "claude-code-learning setup"
 echo
@@ -20,12 +21,22 @@ echo
 # ── 1. Scripts ──────────────────────────────────────────────────────────────
 mkdir -p "$RETRO_DST" "$COMMANDS_DST"
 echo "installing scripts → $RETRO_DST"
-for f in compact.py retro-run.sh retro-maybe.sh retro-notify.sh install-backstop.sh doctor.sh prompt.md WORKFLOW.md; do
-  [[ -f "$RETRO_SRC/$f" ]] || { echo "  ✗ missing: $RETRO_SRC/$f" >&2; exit 1; }
-  cp "$RETRO_SRC/$f" "$RETRO_DST/$f"
-  [[ "$f" == *.sh ]] && chmod +x "$RETRO_DST/$f"
-done
-cp "$SCRIPT_DIR/commands/review-conversations.md" "$COMMANDS_DST/review-conversations.md"
+# When invoked via `bash <(curl ...)`, BASH_SOURCE[0] is /dev/fd/N — no sibling dirs exist.
+# Detect this and download files directly from GitHub instead of copying locally.
+if [[ "$SCRIPT_DIR" == /dev/fd* ]] || [[ ! -d "$RETRO_SRC" ]]; then
+  for f in compact.py retro-run.sh retro-maybe.sh retro-notify.sh install-backstop.sh doctor.sh prompt.md WORKFLOW.md; do
+    curl -fsSL "$REPO_RAW/retro/$f" -o "$RETRO_DST/$f" || { echo "  ✗ failed to download $f" >&2; exit 1; }
+    [[ "$f" == *.sh ]] && chmod +x "$RETRO_DST/$f"
+  done
+  curl -fsSL "$REPO_RAW/commands/review-conversations.md" -o "$COMMANDS_DST/review-conversations.md" || { echo "  ✗ failed to download review-conversations.md" >&2; exit 1; }
+else
+  for f in compact.py retro-run.sh retro-maybe.sh retro-notify.sh install-backstop.sh doctor.sh prompt.md WORKFLOW.md; do
+    [[ -f "$RETRO_SRC/$f" ]] || { echo "  ✗ missing: $RETRO_SRC/$f" >&2; exit 1; }
+    cp "$RETRO_SRC/$f" "$RETRO_DST/$f"
+    [[ "$f" == *.sh ]] && chmod +x "$RETRO_DST/$f"
+  done
+  cp "$SCRIPT_DIR/commands/review-conversations.md" "$COMMANDS_DST/review-conversations.md"
+fi
 echo "  ✓ all scripts installed"
 
 # ── 2. Global env flag ──────────────────────────────────────────────────────
