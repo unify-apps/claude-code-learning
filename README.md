@@ -99,13 +99,27 @@ On Linux, add a cron backstop manually:
 
 ## Turn it off
 
-| What | How |
+### Nuclear (remove everything)
+
+```bash
+launchctl bootout gui/$(id -u)/com.claudecode.retro
+rm ~/Library/LaunchAgents/com.claudecode.retro.plist
+rm -rf ~/.claude/retro
+rm ~/.claude/commands/review-conversations.md
+# then open ~/.claude/settings.json and delete the Stop and UserPromptSubmit hook entries
+```
+
+Run `/plugin uninstall claude-learning` inside Claude Code to remove the plugin.
+
+### Surgical (keep some parts)
+
+| What to stop | How |
 |---|---|
-| Stop hook | Remove `Stop` entry from `~/.claude/settings.json` |
-| Notify hook | Remove `UserPromptSubmit` entry from `~/.claude/settings.json` |
-| LaunchAgent | `launchctl bootout gui/$(id -u)/com.claudecode.retro` |
+| Daily LaunchAgent | `launchctl bootout gui/$(id -u)/com.claudecode.retro` + `rm ~/Library/LaunchAgents/com.claudecode.retro.plist` |
+| Stop hook | Remove the `Stop` entry (containing `retro-maybe`) from `~/.claude/settings.json` |
+| Notify banner | Remove the `UserPromptSubmit` entry (containing `retro-notify`) from `~/.claude/settings.json` |
 | AI review only | Remove `CLAUDE_RETRO_LLM` from `~/.claude/settings.local.json` |
-| Plugin | `/plugin uninstall claude-learning` |
+| Plugin only | `/plugin uninstall claude-learning` inside Claude Code |
 
 ## Do / Don't
 
