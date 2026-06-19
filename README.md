@@ -26,8 +26,9 @@ compact.py (free)  →  claude -p review  →  ~/.claude/retro/conversation-revi
 Add the Unifyapps marketplace once inside Claude Code:
 
 ```
-/plugin marketplace add github:unify-apps/claude-code-learning
+/plugin marketplace add unify-apps/claude-code-learning
 /plugin install claude-learning@unifyapps
+/reload-plugins
 ```
 
 `/claude-learning:review-conversations` is available immediately. Hooks are registered automatically.
