@@ -2,65 +2,79 @@
 
 Automatic conversation review for Claude Code — works for **any team** (frontend, backend, any repo).
 
-After you code, this quietly compacts your recent Claude Code conversations and reviews them
-automatically every 24h, saving a report you read. The same deep review is available on demand
-as `/review-conversations`. Local, and free unless you opt into the AI review.
+After you code, this quietly reviews your recent Claude Code conversations every 24h and saves a structured report covering execution problems, misunderstanding patterns, and your working style. The same deep review is available on demand via `/claude-learning:review-conversations`. Everything is local — nothing is auto-applied.
 
-## What it does
+## How it works
 
-A `Stop` hook fires after each turn, **at most once every 24h**, in the background:
+Three triggers, all pointing at the same pipeline:
 
-1. **`compact.py`** (free, zero quota) — condenses every conversation since your last review into a
-   small readable feed (~22–26× smaller). Nothing is skipped; a checkpoint watermark tracks what was
-   already reviewed (capped at 14 days).
-2. **AI review** (opt-in, needs a token) — feeds the compacted output to a headless `claude` and
-   saves a report to `~/.claude/retro/conversation-review-<date>.md`. You read it; nothing is
-   auto-applied. A macOS notification fires when the report lands, and your next prompt surfaces
-   a one-line "review ready" note inside Claude.
-3. **`/review-conversations`** — runs the same deep review interactively, any time you want.
+1. **Stop hook** — fires when you close a Claude Code session. Runs at most once per 24h.
+2. **LaunchAgent (macOS)** — fires daily at 10am regardless of whether you ever close Claude Code. Catches long-running sessions.
+3. **`/claude-learning:review-conversations`** — on-demand, any time you want.
 
-The hooks are installed globally, so reviews cover **all projects** you work in, not just the repo
-where you run the setup.
+The pipeline:
 
-## Setup
-
-**One command, ~2 minutes:**
-
-```bash
-git clone git@github.com:unifyapps/claude-code-learning.git /tmp/claude-learning
-bash /tmp/claude-learning/setup.sh
+```
+compact.py (free)  →  claude -p review  →  ~/.claude/retro/conversation-review-<date>.md
+                                        →  macOS notification + in-Claude banner
 ```
 
-Or if you received this as a zip / folder: `bash setup.sh` from inside it.
+`compact.py` condenses raw transcripts ~22–26× so the full review fits in one pass. A checkpoint watermark ensures nothing is reviewed twice (capped at 14 days backlog).
 
-`setup.sh` does everything in one interactive flow:
-1. Installs scripts → `~/.claude/retro/` (global; works in any repo)
-2. Installs `/review-conversations` → `~/.claude/commands/`
-3. Registers both hooks in `~/.claude/settings.json` (global)
-4. Sets `CLAUDE_RETRO_LLM=1` in `~/.claude/settings.local.json`
-5. Installs the macOS LaunchAgent daily backstop
-6. Opens System Settings → Notifications, waits while you enable **Script Editor**
-7. Runs `claude setup-token`, prompts for token paste, writes it
-8. Runs `doctor.sh` to verify everything end-to-end
+## Install
 
-Open Claude Code in **any project** — `/review-conversations` works immediately.
-Automatic review fires after the next session (24h debounce).
+### Option 1 — Claude Code plugin (recommended)
 
-The token is needed only for the AI review. The free compaction runs without it.
+Add the Unifyapps marketplace once inside Claude Code:
 
-## Verify the setup
+```
+/plugin marketplace add github:unify-apps/claude-code-learning
+/plugin install claude-learning@unifyapps
+```
+
+`/claude-learning:review-conversations` is available immediately. Hooks are registered automatically.
+
+Then run this once in terminal to enable the daily background review and token setup (~2 min):
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/unify-apps/claude-code-learning/main/setup.sh)
+```
+
+### Option 2 — setup.sh only (no plugin)
+
+```bash
+git clone https://github.com/unify-apps/claude-code-learning.git /tmp/cl
+bash /tmp/cl/setup.sh
+```
+
+`setup.sh` installs everything in one interactive flow:
+1. Scripts → `~/.claude/retro/`
+2. `/review-conversations` → `~/.claude/commands/`
+3. Stop + UserPromptSubmit hooks → `~/.claude/settings.json` (global, all repos)
+4. `CLAUDE_RETRO_LLM=1` → `~/.claude/settings.local.json`
+5. macOS LaunchAgent daily backstop
+6. Notification permission (Script Editor in System Settings)
+7. OAuth token via `claude setup-token`
+8. `doctor.sh` self-check
+
+## Verify
 
 ```bash
 bash ~/.claude/retro/doctor.sh
 ```
 
-Prints PASS/FAIL per link in the enablement chain with the exact fix for anything broken.
+Prints PASS/FAIL per step with the exact fix for anything broken.
 
-## On Linux
+## Platform support
 
-The macOS launchd backstop is skipped automatically. The `Stop` hook still fires after every session.
-For a daily backstop, add to crontab manually:
+| | macOS | Linux | Windows |
+|---|---|---|---|
+| Stop hook | ✓ | ✓ | ✓ (WSL) |
+| On-demand skill | ✓ | ✓ | ✓ (WSL) |
+| LaunchAgent backstop | ✓ | — | — |
+| System notification | ✓ | — | — |
 
+On Linux, add a cron backstop manually:
 ```bash
 @daily bash ~/.claude/retro/retro-run.sh >> ~/.claude/retro/retro.log 2>&1
 ```
@@ -70,22 +84,21 @@ For a daily backstop, add to crontab manually:
 | File | What it does |
 |------|-------------|
 | `setup.sh` | One-command global install. Idempotent. |
-| `configure-token.sh` | Interactive token setup. Run once per machine. |
-| `retro/compact.py` | Compacts raw transcripts ~22–26× into the conversation feed. Free. |
-| `retro/retro-maybe.sh` | Hook entrypoint: 24h debounce + lock + detach. Near-instant. |
-| `retro/retro-run.sh` | Background worker: runs `compact.py`, then AI review if enabled. |
-| `retro/retro-notify.sh` | `UserPromptSubmit` hook: surfaces "review ready" once per new report. |
-| `retro/install-backstop.sh` | Registers the macOS launchd daily safety-net. |
-| `retro/doctor.sh` | Verifies the full setup: env, scripts, hooks, claude CLI, auth probe. |
-| `retro/prompt.md` | Instruction for the automatic headless AI review. |
-| `commands/review-conversations.md` | The `/review-conversations` slash command. |
+| `retro/compact.py` | Compacts raw transcripts ~22–26× into a feed. Free, zero API quota. |
+| `retro/retro-maybe.sh` | Stop hook entrypoint: 24h debounce + lock + detach. ~165ms overhead. |
+| `retro/retro-run.sh` | Background worker: compact + AI review + notify. |
+| `retro/retro-notify.sh` | UserPromptSubmit hook: in-Claude "review ready" banner. |
+| `retro/install-backstop.sh` | Registers the macOS LaunchAgent. |
+| `retro/doctor.sh` | Full setup verification with actionable fixes. |
+| `retro/prompt.md` | System prompt for the headless AI review. |
+| `plugins/claude-learning/` | Claude Code plugin (skill + hooks + marketplace manifest). |
 
-## Where reports go (all local, never committed)
+## Reports (all local, never committed)
 
 ```
 ~/.claude/retro/
-  conversations-<date>.md          compacted feed (free pass)
-  conversation-review-<date>.md    AI review report (token path)
+  conversations-<date>.md          compacted feed
+  conversation-review-<date>.md    AI review report
   INDEX.md                         newest-first navigable index
   latest.md                        symlink to most recent report
   retro.log                        run log with timestamps and costs
@@ -93,24 +106,26 @@ For a daily backstop, add to crontab manually:
 
 ## Turn it off
 
-- **Stop hook:** remove the `Stop` entry from `~/.claude/settings.json`
-- **Notify hook:** remove the `UserPromptSubmit` entry from `~/.claude/settings.json`
-- **Daily backstop:** `launchctl bootout gui/$(id -u)/com.claudecode.retro` (macOS)
-- **AI review only:** remove `CLAUDE_RETRO_LLM` from `~/.claude/settings.local.json` (free compaction still runs)
+| What | How |
+|---|---|
+| Stop hook | Remove `Stop` entry from `~/.claude/settings.json` |
+| Notify hook | Remove `UserPromptSubmit` entry from `~/.claude/settings.json` |
+| LaunchAgent | `launchctl bootout gui/$(id -u)/com.claudecode.retro` |
+| AI review only | Remove `CLAUDE_RETRO_LLM` from `~/.claude/settings.local.json` |
+| Plugin | `/plugin uninstall claude-learning` |
 
 ## Do / Don't
 
 **Do:**
-- Let it run — the compaction is silent and free.
-- Open `~/.claude/retro/INDEX.md` to browse all reports (or `~/.claude/retro/latest.md` for the newest).
-- Run `/review-conversations` any time for an on-demand deep review.
-- Apply only the changeset items you agree with.
-- Add a `retro` alias to `~/.zshrc` for quick access:
+- Open `~/.claude/retro/INDEX.md` to browse all reports.
+- Run `/claude-learning:review-conversations` any time for an on-demand deep review.
+- Apply only the changeset items you agree with — nothing is auto-applied.
+- Add a quick alias:
   ```bash
-  retro() { open ~/.claude/retro/INDEX.md 2>/dev/null || open ~/.claude/retro 2>/dev/null || echo "no retro output yet"; }
+  alias retro='open ~/.claude/retro/INDEX.md 2>/dev/null || open ~/.claude/retro'
   ```
 
 **Don't:**
 - Commit or share your token — treat it as a password.
-- Put `[session]` changeset items in a committed repo `CLAUDE.md` — they describe your local harness.
-- Expect web/desktop app sessions to be covered — only terminal Claude Code sessions appear in reviews.
+- Put `[session]` items in a committed repo `CLAUDE.md` — they're local only.
+- Expect web/desktop Claude sessions to appear — only terminal Claude Code sessions are reviewed.
