@@ -18,10 +18,10 @@
       "category": "productivity",
       "source": {
         "source": "git-subdir",
-        "url": "https://github.com/unifyapps/claude-code-learning",
+        "url": "https://github.com/unify-apps/claude-code-learning",
         "path": "plugins/claude-learning"
       },
-      "homepage": "https://github.com/unifyapps/claude-code-learning",
+      "homepage": "https://github.com/unify-apps/claude-code-learning",
       "tags": ["learning", "productivity", "review", "automation"]
     }
   ]
