@@ -1,8 +1,6 @@
 # claude-code-learning
 
-Automatic conversation review for Claude Code — works for **any team** (frontend, backend, any repo).
-
-After you code, this quietly reviews your recent Claude Code conversations every 24h and saves a structured report covering execution problems, misunderstanding patterns, and your working style. The same deep review is available on demand via `/claude-learning:review-conversations`. Everything is local — nothing is auto-applied.
+Claude Code gets better at working with you over time. This tool reviews your recent conversations daily, surfaces what's going wrong, and proposes fixes. Everything stays local — nothing is auto-applied.
 
 ## How it works
 
@@ -47,15 +45,7 @@ git clone https://github.com/unify-apps/claude-code-learning.git /tmp/cl
 bash /tmp/cl/setup.sh
 ```
 
-`setup.sh` installs everything in one interactive flow:
-1. Scripts → `~/.claude/retro/`
-2. `/review-conversations` → `~/.claude/commands/`
-3. Stop + UserPromptSubmit hooks → `~/.claude/settings.json` (global, all repos)
-4. `CLAUDE_RETRO_LLM=1` → `~/.claude/settings.local.json`
-5. macOS LaunchAgent daily backstop
-6. Notification permission (Script Editor in System Settings)
-7. OAuth token via `claude setup-token`
-8. `doctor.sh` self-check
+`setup.sh` handles everything in one interactive flow — scripts, hooks, LaunchAgent, token, and a self-check at the end.
 
 ## Verify
 
