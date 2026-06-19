@@ -1,0 +1,28 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "unifyapps",
+  "description": "Unifyapps internal Claude Code plugins — productivity and continual learning tools for engineering teams.",
+  "owner": {
+    "name": "Unifyapps",
+    "email": "engineering@unifyapps.com"
+  },
+  "plugins": [
+    {
+      "name": "claude-learning",
+      "displayName": "Claude Learning",
+      "description": "Automatic daily review of your Claude Code conversations. Surfaces patterns, mistakes, and improvements so Claude gets better at working with you over time. Includes /claude-learning:review-conversations for on-demand deep reviews.",
+      "author": {
+        "name": "Unifyapps",
+        "url": "https://github.com/unifyapps/claude-code-learning"
+      },
+      "category": "productivity",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/unifyapps/claude-code-learning",
+        "path": "plugins/claude-learning"
+      },
+      "homepage": "https://github.com/unifyapps/claude-code-learning",
+      "tags": ["learning", "productivity", "review", "automation"]
+    }
+  ]
+}

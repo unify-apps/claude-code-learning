@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test -f \"${HOME}/.claude/retro/retro-maybe.sh\" && bash \"${HOME}/.claude/retro/retro-maybe.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test -f \"${HOME}/.claude/retro/retro-notify.sh\" && bash \"${HOME}/.claude/retro/retro-notify.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
