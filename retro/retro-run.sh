@@ -39,7 +39,14 @@ if [[ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" && -f "$LOCAL" ]]; then
 fi
 
 [[ "${CLAUDE_RETRO_LLM:-0}" == "1" ]] || { log "AI review off (set CLAUDE_RETRO_LLM=1 + a token to enable)"; exit 0; }
-command -v claude >/dev/null 2>&1 || { log "AI review skipped: 'claude' not on PATH"; exit 0; }
+
+# launchd runs with a stripped PATH — expand it with common install locations before checking for claude.
+for _d in /usr/local/bin /opt/homebrew/bin "$HOME/.npm-global/bin" "$HOME/.local/bin" "$HOME/bin" /usr/bin; do
+  [[ -d "$_d" ]] && export PATH="$_d:$PATH"
+done
+unset _d
+
+command -v claude >/dev/null 2>&1 || { log "AI review skipped: 'claude' not on PATH (checked /usr/local/bin, /opt/homebrew/bin, ~/.npm-global/bin, ~/.local/bin)"; exit 0; }
 
 FEED="$RETRO_DIR/conversations-${DATE_TAG}.md"
 ENVELOPE="$RETRO_DIR/.review-${DATE_TAG}.json"
