@@ -100,22 +100,15 @@ fi
 echo
 
 # ── 5. macOS notification permission (interactive only) ─────────────────────
-if command -v osascript >/dev/null 2>&1 && (( INTERACTIVE )); then
-    TCC_DB="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
-    se_ok=$(sqlite3 "$TCC_DB" \
-        "SELECT auth_value FROM access WHERE service='kTCFRequestedPermissionNotifications' AND client='com.apple.ScriptEditor2'" \
-        2>/dev/null || true)
-    if [[ "$se_ok" == "2" ]]; then
-        echo "  ✓ macOS notifications already enabled (Script Editor)"
-    else
-        echo "── notification permission ──────────────────────────────────────────────────"
-        osascript -e 'display notification "Click Allow in System Settings to enable retro notifications." with title "Claude Code retro" sound name "Submarine"' 2>/dev/null || true
-        open "x-apple.systempreferences:com.apple.preference.notifications" 2>/dev/null || true
-        echo "  System Settings just opened → Notifications → Script Editor → Allow Notifications: ON"
-        echo
-        printf "  Press Enter once you've enabled it (or Enter to skip): "
-        read -r _
-    fi
+if command -v terminal-notifier >/dev/null 2>&1 && (( INTERACTIVE )); then
+    echo "── notification permission ──────────────────────────────────────────────────"
+    echo "  Sending a test notification — you need to allow it in System Settings."
+    terminal-notifier -title "Claude Code retro" -message "Setup complete — allow notifications to see daily reviews." -sound "Submarine" 2>/dev/null || true
+    open "x-apple.systempreferences:com.apple.preference.notifications" 2>/dev/null || true
+    echo "  System Settings just opened → scroll to terminal-notifier → Alert style: Banners"
+    echo
+    printf "  Press Enter once you've set it (or Enter to skip): "
+    read -r _
     echo
 fi
 

@@ -127,14 +127,15 @@ with open(index_path, "w") as fh:
 PY
 
   if command -v terminal-notifier >/dev/null 2>&1; then
-    # terminal-notifier supports --open so clicking the notification opens the review file directly.
+    # Open the retro folder in Finder and reveal the review file — more reliable than a file:// URL
+    # since .md files have no guaranteed default app on macOS.
     terminal-notifier \
       -title "Claude Code retro" \
       -subtitle "Conversation review for ${DATE_TAG} ready" \
-      -message "Click to open" \
-      -open "file://${MD}" \
+      -message "Click to open in Finder" \
+      -execute "open -R \"${MD}\"" \
       -sound "Submarine" >/dev/null 2>&1 || true
-    log "macOS notification fired via terminal-notifier (click opens review file)"
+    log "macOS notification fired via terminal-notifier (click reveals review file in Finder)"
   elif command -v osascript >/dev/null 2>&1; then
     osascript -e "display notification \"Open ~/.claude/retro/INDEX.md to read it.\" with title \"Claude Code retro\" subtitle \"Conversation review for ${DATE_TAG} ready\" sound name \"Submarine\"" >/dev/null 2>&1 || true
     log "macOS notification fired (requires terminal app notification permission — see doctor.sh if silent)"
