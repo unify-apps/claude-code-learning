@@ -104,17 +104,12 @@ fi
 # 7. macOS notification permission — fire a test, user verifies visually.
 # TCC database requires Full Disk Access to query — not available to normal processes.
 # Best we can do: fire a test notification and tell the user what to look for.
-if command -v terminal-notifier >/dev/null 2>&1; then
-  terminal-notifier -title "retro doctor ✓" -message "If you see this banner, notifications are working." -sound "Submarine" >/dev/null 2>&1 || true
-  note "macOS: a test notification was just fired via terminal-notifier (with sound)."
-  note "  ✓ saw a banner → working fine, nothing to do."
-  note "  ✗ no banner → System Settings → Notifications → terminal-notifier → Alert style: Banners"
-  note "    shortcut: open 'x-apple.systempreferences:com.apple.preference.notifications'"
-elif command -v osascript >/dev/null 2>&1; then
+if command -v osascript >/dev/null 2>&1; then
   osascript -e 'display notification "If you see this banner, notifications are working." with title "retro doctor ✓" sound name "Submarine"' >/dev/null 2>&1 || true
-  note "macOS: a test notification was fired via osascript (terminal-notifier not installed)."
-  note "  ✓ saw a banner → working; install terminal-notifier for clickable notifications."
+  note "macOS: a test notification was just fired (with sound)."
+  note "  ✓ saw a banner → working fine, nothing to do."
   note "  ✗ no banner → System Settings → Notifications → Script Editor → Allow Notifications: ON"
+  note "    shortcut: open 'x-apple.systempreferences:com.apple.preference.notifications'"
 else
   note "non-macOS — system notifications skipped; in-Claude notification still works."
 fi

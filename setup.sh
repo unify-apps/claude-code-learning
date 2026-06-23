@@ -100,13 +100,16 @@ fi
 echo
 
 # ── 5. macOS notification permission (interactive only) ─────────────────────
-if command -v terminal-notifier >/dev/null 2>&1 && (( INTERACTIVE )); then
+# Use osascript for the setup test — it works on all macOS versions. terminal-notifier
+# uses deprecated APIs that break on macOS 15+; it's kept in retro-run.sh as a click
+# enhancement but osascript is the reliable fallback for permission setup.
+if command -v osascript >/dev/null 2>&1 && (( INTERACTIVE )); then
     echo "── notification permission ──────────────────────────────────────────────────"
     echo "  Sending a test notification — you need to allow it in System Settings."
-    terminal-notifier -title "Claude Code retro" -message "Setup complete — allow notifications to see daily reviews." -sound "Submarine" 2>/dev/null || true
-    sleep 3  # give macOS time to register terminal-notifier before opening Settings
+    osascript -e 'display notification "Setup complete — allow notifications to see daily reviews." with title "Claude Code retro" sound name "Submarine"' 2>/dev/null || true
+    sleep 2
     open "x-apple.systempreferences:com.apple.preference.notifications" 2>/dev/null || true
-    echo "  System Settings just opened → scroll to terminal-notifier → Alert style: Banners"
+    echo "  System Settings just opened → scroll to Script Editor → Allow Notifications: ON"
     echo
     printf "  Press Enter once you've set it (or Enter to skip): "
     read -r _
