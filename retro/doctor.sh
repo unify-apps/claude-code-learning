@@ -31,14 +31,14 @@ print(env.get("CLAUDE_RETRO_LLM") or "NONE", "SET" if env.get("CLAUDE_CODE_OAUTH
 PY
 )
 else
-  bad "no ~/.claude/settings.local.json" "run bash setup.sh then bash configure-token.sh"
+  bad "no ~/.claude/settings.local.json" "run bash setup.sh"
 fi
 [[ "$flag" == "1" ]] && ok "CLAUDE_RETRO_LLM=1 in ~/.claude/settings.local.json" \
   || bad "CLAUDE_RETRO_LLM not set to 1 in ~/.claude/settings.local.json" \
          "run bash setup.sh to write it"
 [[ "$tokstate" == "SET" ]] && ok "CLAUDE_CODE_OAUTH_TOKEN present in ~/.claude/settings.local.json" \
   || bad "CLAUDE_CODE_OAUTH_TOKEN missing in ~/.claude/settings.local.json" \
-         "run bash configure-token.sh"
+         "re-run bash setup.sh and complete the token step"
 
 # 2. Scripts are installed to ~/.claude/retro/.
 RETRO_DIR="$HOME/.claude/retro"
@@ -103,14 +103,18 @@ fi
 
 # 7. macOS notification permission — fire a test, user verifies visually.
 # TCC database requires Full Disk Access to query — not available to normal processes.
-# osascript also returns exit 0 even when silently denied, so there's no programmatic signal.
-# Best we can do: fire the notification and tell the user what to look for.
-if command -v osascript >/dev/null 2>&1; then
-  osascript -e 'display notification "If you see this banner, notifications are working." with title "retro doctor ✓" sound name "Submarine"' >/dev/null 2>&1 || true
-  note "macOS: a test notification was just fired (with sound)."
+# Best we can do: fire a test notification and tell the user what to look for.
+if command -v terminal-notifier >/dev/null 2>&1; then
+  terminal-notifier -title "retro doctor ✓" -message "If you see this banner, notifications are working." -sound "Submarine" >/dev/null 2>&1 || true
+  note "macOS: a test notification was just fired via terminal-notifier (with sound)."
   note "  ✓ saw a banner → working fine, nothing to do."
-  note "  ✗ no banner → System Settings → Notifications → Script Editor → Allow Notifications: ON"
+  note "  ✗ no banner → System Settings → Notifications → terminal-notifier → Alert style: Banners"
   note "    shortcut: open 'x-apple.systempreferences:com.apple.preference.notifications'"
+elif command -v osascript >/dev/null 2>&1; then
+  osascript -e 'display notification "If you see this banner, notifications are working." with title "retro doctor ✓" sound name "Submarine"' >/dev/null 2>&1 || true
+  note "macOS: a test notification was fired via osascript (terminal-notifier not installed)."
+  note "  ✓ saw a banner → working; install terminal-notifier for clickable notifications."
+  note "  ✗ no banner → System Settings → Notifications → Script Editor → Allow Notifications: ON"
 else
   note "non-macOS — system notifications skipped; in-Claude notification still works."
 fi

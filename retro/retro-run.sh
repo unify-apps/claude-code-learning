@@ -53,8 +53,8 @@ ENVELOPE="$RETRO_DIR/.review-${DATE_TAG}.json"
 MD="$RETRO_DIR/conversation-review-${DATE_TAG}.md"
 [[ -s "$FEED" ]] || { log "AI review skipped: no compacted feed at $FEED"; exit 0; }
 
-# Whole prompt (instruction + the compacted feed) via STDIN — the feed is far too big for an argv
-# arg. --bare skips hooks/skills/CLAUDE.md so this headless run can't re-fire the Stop hook.
+# Whole prompt (instruction + the compacted feed) via STDIN — the feed is far too big for an argv arg.
+# Runs from $HOME so no project CLAUDE.md or hooks are loaded — prevents the Stop hook re-firing.
 { cat "$SCRIPT_DIR/prompt.md"; printf '\n\n--- CONVERSATION FEED (last 24h) ---\n'; cat "$FEED"; } \
   | (cd "$HOME" && claude -p --output-format json) > "$ENVELOPE" 2>>"$RETRO_DIR/retro.log" || true
 
