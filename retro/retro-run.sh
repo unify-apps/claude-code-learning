@@ -126,7 +126,16 @@ with open(index_path, "w") as fh:
     fh.write(HEADER + "\n" + ordered + "\n")
 PY
 
-  if command -v osascript >/dev/null 2>&1; then
+  if command -v terminal-notifier >/dev/null 2>&1; then
+    # terminal-notifier supports --open so clicking the notification opens the review file directly.
+    terminal-notifier \
+      -title "Claude Code retro" \
+      -subtitle "Conversation review for ${DATE_TAG} ready" \
+      -message "Click to open" \
+      -open "file://${MD}" \
+      -sound "Submarine" >/dev/null 2>&1 || true
+    log "macOS notification fired via terminal-notifier (click opens review file)"
+  elif command -v osascript >/dev/null 2>&1; then
     osascript -e "display notification \"Open ~/.claude/retro/INDEX.md to read it.\" with title \"Claude Code retro\" subtitle \"Conversation review for ${DATE_TAG} ready\" sound name \"Submarine\"" >/dev/null 2>&1 || true
     log "macOS notification fired (requires terminal app notification permission — see doctor.sh if silent)"
   fi
