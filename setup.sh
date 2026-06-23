@@ -104,6 +104,7 @@ if command -v terminal-notifier >/dev/null 2>&1 && (( INTERACTIVE )); then
     echo "── notification permission ──────────────────────────────────────────────────"
     echo "  Sending a test notification — you need to allow it in System Settings."
     terminal-notifier -title "Claude Code retro" -message "Setup complete — allow notifications to see daily reviews." -sound "Submarine" 2>/dev/null || true
+    sleep 3  # give macOS time to register terminal-notifier before opening Settings
     open "x-apple.systempreferences:com.apple.preference.notifications" 2>/dev/null || true
     echo "  System Settings just opened → scroll to terminal-notifier → Alert style: Banners"
     echo
