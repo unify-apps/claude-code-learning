@@ -124,7 +124,6 @@ Run `/plugin uninstall claude-learning` inside Claude Code to remove the plugin.
 ## Do / Don't
 
 **Do:**
-- Install `terminal-notifier` (`brew install terminal-notifier`) to make notifications clickable — clicking opens the review file directly instead of an untitled window.
 - Open `~/.claude/retro/INDEX.md` to browse all reports.
 - Run `/claude-learning:review-conversations` any time for an on-demand deep review.
 - Apply only the changeset items you agree with — nothing is auto-applied.
