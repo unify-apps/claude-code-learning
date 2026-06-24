@@ -83,11 +83,15 @@ else
     echo "    @daily bash ~/.claude/retro/retro-run.sh >> ~/.claude/retro/retro.log 2>&1"
 fi
 echo "installing terminal-notifier (clickable notifications)"
+# bash <(curl ...) doesn't load shell profile — source Homebrew manually from known locations.
+[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+[[ -x /usr/local/bin/brew ]] && eval "$(/usr/local/bin/brew shellenv)"
 if ! command -v terminal-notifier >/dev/null 2>&1; then
     if ! command -v brew >/dev/null 2>&1; then
         echo "  installing Homebrew first (this may take a few minutes)..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+        [[ -x /usr/local/bin/brew ]] && eval "$(/usr/local/bin/brew shellenv)"
     fi
     if command -v brew >/dev/null 2>&1; then
         echo "  installing terminal-notifier (this may take a moment)..."
