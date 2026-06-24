@@ -82,17 +82,21 @@ else
     echo "  • Linux: add to crontab for daily backstop:"
     echo "    @daily bash ~/.claude/retro/retro-run.sh >> ~/.claude/retro/retro.log 2>&1"
 fi
+echo "installing terminal-notifier (clickable notifications)"
 if ! command -v terminal-notifier >/dev/null 2>&1; then
     if ! command -v brew >/dev/null 2>&1; then
-        echo "  installing Homebrew (needed for terminal-notifier)..."
+        echo "  installing Homebrew first (this may take a few minutes)..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
     fi
     if command -v brew >/dev/null 2>&1; then
-        echo "  installing terminal-notifier (makes notifications clickable)..."
-        brew install terminal-notifier >/dev/null 2>&1 \
+        echo "  installing terminal-notifier (this may take a moment)..."
+        brew install terminal-notifier 2>&1 | grep -E "^==>|Error|already" | sed 's/^/  /'
+        command -v terminal-notifier >/dev/null 2>&1 \
             && echo "  ✓ terminal-notifier installed" \
             || echo "  • terminal-notifier install failed — notifications will still work, just not clickable"
+    else
+        echo "  • Homebrew not found — skipping terminal-notifier (notifications will work, just not clickable)"
     fi
 else
     echo "  ✓ terminal-notifier already installed"
