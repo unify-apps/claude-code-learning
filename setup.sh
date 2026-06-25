@@ -97,10 +97,30 @@ if ! command -v terminal-notifier >/dev/null 2>&1; then
         echo "  installing terminal-notifier (this may take a moment)..."
         brew install terminal-notifier 2>&1 | grep -E "^==>|Error|already" | sed 's/^/  /'
         command -v terminal-notifier >/dev/null 2>&1 \
-            && echo "  ✓ terminal-notifier installed" \
+            && echo "  ✓ terminal-notifier installed via Homebrew" \
             || echo "  • terminal-notifier install failed — notifications will still work, just not clickable"
     else
-        echo "  • Homebrew not found — skipping terminal-notifier (notifications will work, just not clickable)"
+        echo "  • Homebrew not found — trying direct download..."
+        _tn_dir="$HOME/.local/bin"
+        mkdir -p "$_tn_dir"
+        _tn_zip="/tmp/terminal-notifier.zip"
+        _tn_url="https://github.com/julienXX/terminal-notifier/releases/download/2.0.0/terminal-notifier-2.0.0.zip"
+        if curl -fsSL "$_tn_url" -o "$_tn_zip" 2>/dev/null; then
+            unzip -qo "$_tn_zip" -d /tmp/terminal-notifier-extract 2>/dev/null || true
+            _tn_bin=$(find /tmp/terminal-notifier-extract -name "terminal-notifier" -type f 2>/dev/null | head -1)
+            if [[ -n "$_tn_bin" ]]; then
+                cp "$_tn_bin" "$_tn_dir/terminal-notifier"
+                chmod +x "$_tn_dir/terminal-notifier"
+                export PATH="$_tn_dir:$PATH"
+                echo "  ✓ terminal-notifier installed to ~/.local/bin (no Homebrew needed)"
+            else
+                echo "  • terminal-notifier direct download failed — notifications will still work, just not clickable"
+            fi
+            rm -rf "$_tn_zip" /tmp/terminal-notifier-extract
+        else
+            echo "  • terminal-notifier download failed — notifications will still work, just not clickable"
+        fi
+        unset _tn_dir _tn_zip _tn_url _tn_bin
     fi
 else
     echo "  ✓ terminal-notifier already installed"
