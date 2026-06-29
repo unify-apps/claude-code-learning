@@ -121,17 +121,20 @@ fi
 # TCC database requires Full Disk Access to query — not available to normal processes.
 # Best we can do: fire test notifications and tell the user what to look for.
 if command -v osascript >/dev/null 2>&1; then
+  _macos_major=$(sw_vers -productVersion 2>/dev/null | cut -d. -f1 || echo "0")
   osascript -e 'display notification "If you see this banner, Script Editor notifications are working." with title "retro doctor ✓" sound name "Submarine"' >/dev/null 2>&1 || true
   note "macOS: a Script Editor test notification was just fired."
-  note "  ✓ saw a banner → Script Editor notifications working."
-  note "  ✗ no banner → System Settings → Notifications → Script Editor → Alert style: Banners"
-  if command -v terminal-notifier >/dev/null 2>&1; then
+  note "  ✓ saw a banner → notifications working."
+  note "  ✗ no banner → System Settings → Notifications → Script Editor → Alert style: Banners/Temporary"
+  # terminal-notifier 2.0.0 is broken on macOS 26 (Tahoe) and later — skip on those versions.
+  if command -v terminal-notifier >/dev/null 2>&1 && (( _macos_major > 0 && _macos_major < 26 )); then
     terminal-notifier -title "retro doctor ✓" -message "If you see this, terminal-notifier notifications are working." -sound "Submarine" >/dev/null 2>&1 || true
-    note "macOS: a terminal-notifier test notification was also fired (used for clickable review notifications)."
+    note "macOS: a terminal-notifier test notification was also fired (clickable review notifications)."
     note "  ✓ saw a banner → terminal-notifier working — click action will open review in Finder."
     note "  ✗ no banner → System Settings → Notifications → terminal-notifier → Alert style: Banners"
   fi
   note "  shortcut to open Notifications settings: open 'x-apple.systempreferences:com.apple.preference.notifications'"
+  unset _macos_major
 else
   note "non-macOS — system notifications skipped; in-Claude notification still works."
 fi

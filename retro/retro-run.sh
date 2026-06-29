@@ -131,9 +131,10 @@ with open(index_path, "w") as fh:
     fh.write(HEADER + "\n" + ordered + "\n")
 PY
 
-  # terminal-notifier exits 0 even when silently suppressed by System Settings ("None" permission),
-  # so we can't detect permission issues from exit code. Log message tells user what to check.
-  if command -v terminal-notifier >/dev/null 2>&1; then
+  # terminal-notifier 2.0.0 is broken on macOS 26 (Tahoe) and later — use it only on older macOS.
+  # osascript works on all macOS versions and is the reliable fallback.
+  _macos_major=$(sw_vers -productVersion 2>/dev/null | cut -d. -f1 || echo "0")
+  if command -v terminal-notifier >/dev/null 2>&1 && (( _macos_major > 0 && _macos_major < 26 )); then
     terminal-notifier \
       -title "Claude Code retro" \
       -subtitle "Conversation review for ${DATE_TAG} ready" \
@@ -145,4 +146,5 @@ PY
     osascript -e "display notification \"Open ~/.claude/retro/INDEX.md to read it.\" with title \"Claude Code retro\" subtitle \"Conversation review for ${DATE_TAG} ready\" sound name \"Submarine\"" >/dev/null 2>&1 || true
     log "macOS notification sent via osascript — if no banner: System Settings → Notifications → Script Editor → Alert style: Banners"
   fi
+  unset _macos_major
 fi
