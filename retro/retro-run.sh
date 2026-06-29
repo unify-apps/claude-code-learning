@@ -20,8 +20,14 @@ trap 'rm -rf "$LOCK"' EXIT   # always release the lock, however we exit
 
 # Compact the unreviewed conversations since the last checkpoint (deterministic, free). Stamp the
 # 24h debounce only on success, so a crash/kill mid-run retries next turn instead of skipping.
-if python3 "$SCRIPT_DIR/compact.py" >>"$RETRO_DIR/retro.log" 2>&1; then
+# Capture the feed path from compact.py's stdout (last line contains the path after the token count).
+# Using compact.py's own output avoids a midnight edge case where DATE_TAG rolls before the feed is read.
+COMPACT_OUT=$(python3 "$SCRIPT_DIR/compact.py" 2>>"$RETRO_DIR/retro.log")
+COMPACT_EXIT=$?
+echo "$COMPACT_OUT" >> "$RETRO_DIR/retro.log"
+if [[ $COMPACT_EXIT -eq 0 ]]; then
   touch "$STAMP"
+  FEED=$(echo "$COMPACT_OUT" | grep -oE '[^ ]+conversations-[0-9-]+\.md' | tail -1 || true)
 else
   log "compact pass failed; will retry next turn"
   exit 0
@@ -48,10 +54,9 @@ unset _d
 
 command -v claude >/dev/null 2>&1 || { log "AI review skipped: 'claude' not on PATH (checked /usr/local/bin, /opt/homebrew/bin, ~/.npm-global/bin, ~/.local/bin)"; exit 0; }
 
-FEED="$RETRO_DIR/conversations-${DATE_TAG}.md"
 ENVELOPE="$RETRO_DIR/.review-${DATE_TAG}.json"
 MD="$RETRO_DIR/conversation-review-${DATE_TAG}.md"
-[[ -s "$FEED" ]] || { log "AI review skipped: no compacted feed at $FEED"; exit 0; }
+[[ -n "$FEED" && -s "$FEED" ]] || { log "AI review skipped: no compacted feed found (compact output: $(echo "$COMPACT_OUT" | tail -1))"; exit 0; }
 
 # Whole prompt (instruction + the compacted feed) via STDIN — the feed is far too big for an argv arg.
 # Runs from $HOME so no project CLAUDE.md or hooks are loaded — prevents the Stop hook re-firing.
@@ -126,18 +131,18 @@ with open(index_path, "w") as fh:
     fh.write(HEADER + "\n" + ordered + "\n")
 PY
 
+  # terminal-notifier exits 0 even when silently suppressed by System Settings ("None" permission),
+  # so we can't detect permission issues from exit code. Log message tells user what to check.
   if command -v terminal-notifier >/dev/null 2>&1; then
-    # Open the retro folder in Finder and reveal the review file — more reliable than a file:// URL
-    # since .md files have no guaranteed default app on macOS.
     terminal-notifier \
       -title "Claude Code retro" \
       -subtitle "Conversation review for ${DATE_TAG} ready" \
       -message "Click to open in Finder" \
       -execute "open -R \"${MD}\"" \
       -sound "Submarine" >/dev/null 2>&1 || true
-    log "macOS notification fired via terminal-notifier (click reveals review file in Finder)"
+    log "macOS notification sent via terminal-notifier — if no banner: System Settings → Notifications → terminal-notifier → Alert style: Banners"
   elif command -v osascript >/dev/null 2>&1; then
     osascript -e "display notification \"Open ~/.claude/retro/INDEX.md to read it.\" with title \"Claude Code retro\" subtitle \"Conversation review for ${DATE_TAG} ready\" sound name \"Submarine\"" >/dev/null 2>&1 || true
-    log "macOS notification fired (requires terminal app notification permission — see doctor.sh if silent)"
+    log "macOS notification sent via osascript — if no banner: System Settings → Notifications → Script Editor → Alert style: Banners"
   fi
 fi

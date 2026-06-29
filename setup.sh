@@ -77,7 +77,7 @@ PY
 
 # ── 4. LaunchAgent (macOS daily backstop) ───────────────────────────────────
 if command -v launchctl >/dev/null 2>&1; then
-    bash "$RETRO_DST/install-backstop.sh" 2>&1 | grep -E "^installed|error" | sed 's/^/  ✓ /'
+    bash "$RETRO_DST/install-backstop.sh" 2>&1 | sed 's/^/  /'
 else
     echo "  • Linux: add to crontab for daily backstop:"
     echo "    @daily bash ~/.claude/retro/retro-run.sh >> ~/.claude/retro/retro.log 2>&1"
@@ -101,18 +101,23 @@ if ! command -v terminal-notifier >/dev/null 2>&1; then
             || echo "  • terminal-notifier install failed — notifications will still work, just not clickable"
     else
         echo "  • Homebrew not found — trying direct download..."
-        _tn_dir="$HOME/.local/bin"
-        mkdir -p "$_tn_dir"
         _tn_zip="/tmp/terminal-notifier.zip"
         _tn_url="https://github.com/julienXX/terminal-notifier/releases/download/2.0.0/terminal-notifier-2.0.0.zip"
+        _tn_app="$HOME/Applications/terminal-notifier.app"
+        _tn_bin="$HOME/.local/bin/terminal-notifier"
         if curl -fsSL "$_tn_url" -o "$_tn_zip" 2>/dev/null; then
             unzip -qo "$_tn_zip" -d /tmp/terminal-notifier-extract 2>/dev/null || true
-            _tn_bin=$(find /tmp/terminal-notifier-extract -name "terminal-notifier" -type f 2>/dev/null | head -1)
-            if [[ -n "$_tn_bin" ]]; then
-                cp "$_tn_bin" "$_tn_dir/terminal-notifier"
-                chmod +x "$_tn_dir/terminal-notifier"
-                export PATH="$_tn_dir:$PATH"
-                echo "  ✓ terminal-notifier installed to ~/.local/bin (no Homebrew needed)"
+            _tn_app_src=$(find /tmp/terminal-notifier-extract -name "terminal-notifier.app" -type d 2>/dev/null | head -1)
+            if [[ -n "$_tn_app_src" ]]; then
+                # Install the full .app bundle — terminal-notifier needs it to register in System Settings.
+                mkdir -p "$HOME/Applications" "$HOME/.local/bin"
+                rm -rf "$_tn_app"
+                cp -r "$_tn_app_src" "$_tn_app"
+                # Wrapper so the binary is on PATH while the bundle stays intact.
+                printf '#!/bin/bash\nexec "%s/Contents/MacOS/terminal-notifier" "$@"\n' "$_tn_app" > "$_tn_bin"
+                chmod +x "$_tn_bin"
+                export PATH="$HOME/.local/bin:$PATH"
+                echo "  ✓ terminal-notifier installed to ~/Applications (no Homebrew needed)"
             else
                 echo "  • terminal-notifier direct download failed — notifications will still work, just not clickable"
             fi
@@ -120,7 +125,7 @@ if ! command -v terminal-notifier >/dev/null 2>&1; then
         else
             echo "  • terminal-notifier download failed — notifications will still work, just not clickable"
         fi
-        unset _tn_dir _tn_zip _tn_url _tn_bin
+        unset _tn_zip _tn_url _tn_app _tn_bin _tn_app_src
     fi
 else
     echo "  ✓ terminal-notifier already installed"

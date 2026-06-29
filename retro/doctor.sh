@@ -71,11 +71,27 @@ PY
   || bad "UserPromptSubmit hook missing from ~/.claude/settings.json" \
          "run bash setup.sh — this hook is why in-Claude notifications don't appear"
 
-# 4. claude CLI reachable.
+# 4. LaunchAgent (macOS daily backstop).
+if command -v launchctl >/dev/null 2>&1; then
+  PLIST="$HOME/Library/LaunchAgents/com.claudecode.retro.plist"
+  if [[ -f "$PLIST" ]]; then
+    if launchctl list com.claudecode.retro >/dev/null 2>&1; then
+      ok "LaunchAgent com.claudecode.retro loaded (daily 10:00 backstop active)"
+    else
+      bad "LaunchAgent plist exists but is not loaded" "run: launchctl bootstrap gui/$(id -u) '$PLIST'"
+    fi
+  else
+    bad "LaunchAgent not installed (daily backstop missing)" "re-run bash setup.sh to install it"
+  fi
+else
+  note "non-macOS — LaunchAgent check skipped"
+fi
+
+# 5. claude CLI reachable.
 if command -v claude >/dev/null 2>&1; then ok "claude on PATH ($(command -v claude))"
 else bad "claude not on PATH" "install the Claude Code CLI and ensure it's on PATH"; fi
 
-# 5. Live injection check (informational — only meaningful when running inside Claude Code).
+# 6. Live injection check (informational — only meaningful when running inside Claude Code).
 if [[ -n "${CLAUDE_RETRO_LLM:-}" ]]; then
   ok "live injection confirmed — CLAUDE_RETRO_LLM is in this subprocess (running inside Claude Code)"
 else
@@ -83,7 +99,7 @@ else
   note "  Check 1 (the file) is the launch-independent source of truth."
 fi
 
-# 6. End-to-end headless auth probe.
+# 7. End-to-end headless auth probe.
 if (( RUN_EXEC )) && [[ "$tokstate" == "SET" ]]; then
   echo; note "running headless auth probe (one tiny billable claude call)…"
   realtok=$(python3 -c "import json;print(json.load(open('$LOCAL'))['env']['CLAUDE_CODE_OAUTH_TOKEN'])" 2>/dev/null)
@@ -93,7 +109,7 @@ if (( RUN_EXEC )) && [[ "$tokstate" == "SET" ]]; then
   else
     err=$(echo "$out" | python3 -c "import json,sys; print((json.load(sys.stdin).get('result') or '')[:90])" 2>/dev/null)
     bad "headless claude FAILED to authenticate (${err:-no/blank response})" \
-        "regenerate with 'claude setup-token' and rerun configure-token.sh — the in-app login does NOT authenticate headless claude"
+        "re-run bash setup.sh and complete the token step — the in-app login does NOT authenticate headless claude"
   fi
 elif (( RUN_EXEC )); then
   note "skipped execution probe — fix the token check above first"
@@ -101,15 +117,21 @@ else
   note "execution probe skipped (--no-exec)"
 fi
 
-# 7. macOS notification permission — fire a test, user verifies visually.
+# 8. macOS notification permission — fire test notifications, user verifies visually.
 # TCC database requires Full Disk Access to query — not available to normal processes.
-# Best we can do: fire a test notification and tell the user what to look for.
+# Best we can do: fire test notifications and tell the user what to look for.
 if command -v osascript >/dev/null 2>&1; then
-  osascript -e 'display notification "If you see this banner, notifications are working." with title "retro doctor ✓" sound name "Submarine"' >/dev/null 2>&1 || true
-  note "macOS: a test notification was just fired (with sound)."
-  note "  ✓ saw a banner → working fine, nothing to do."
-  note "  ✗ no banner → System Settings → Notifications → Script Editor → Allow Notifications: ON"
-  note "    shortcut: open 'x-apple.systempreferences:com.apple.preference.notifications'"
+  osascript -e 'display notification "If you see this banner, Script Editor notifications are working." with title "retro doctor ✓" sound name "Submarine"' >/dev/null 2>&1 || true
+  note "macOS: a Script Editor test notification was just fired."
+  note "  ✓ saw a banner → Script Editor notifications working."
+  note "  ✗ no banner → System Settings → Notifications → Script Editor → Alert style: Banners"
+  if command -v terminal-notifier >/dev/null 2>&1; then
+    terminal-notifier -title "retro doctor ✓" -message "If you see this, terminal-notifier notifications are working." -sound "Submarine" >/dev/null 2>&1 || true
+    note "macOS: a terminal-notifier test notification was also fired (used for clickable review notifications)."
+    note "  ✓ saw a banner → terminal-notifier working — click action will open review in Finder."
+    note "  ✗ no banner → System Settings → Notifications → terminal-notifier → Alert style: Banners"
+  fi
+  note "  shortcut to open Notifications settings: open 'x-apple.systempreferences:com.apple.preference.notifications'"
 else
   note "non-macOS — system notifications skipped; in-Claude notification still works."
 fi
