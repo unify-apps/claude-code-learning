@@ -18,6 +18,32 @@ log() { echo "$(date '+%F %T') retro: $*" >> "$RETRO_DIR/retro.log"; }
 
 trap 'rm -rf "$LOCK"' EXIT   # always release the lock, however we exit
 
+# Weekly self-update: pull latest scripts from GitHub so existing installs stay current.
+# Downloads everything to a temp dir first — nothing is replaced unless all files land cleanly.
+# Stamp is only touched on success, so a network outage retries on the next run (not next week).
+_update_stamp="$RETRO_DIR/.update-last"
+_repo_raw="https://raw.githubusercontent.com/unify-apps/claude-code-learning/main/retro"
+if [[ ! -f "$_update_stamp" ]] || find "$_update_stamp" -mtime +6 -print -quit 2>/dev/null | grep -q .; then
+  _tmp=$(mktemp -d)
+  _ok=1
+  for _f in compact.py retro-run.sh retro-maybe.sh retro-notify.sh install-backstop.sh doctor.sh prompt.md WORKFLOW.md; do
+    curl -fsSL "$_repo_raw/$_f" -o "$_tmp/$_f" 2>/dev/null || { _ok=0; break; }
+  done
+  if (( _ok )); then
+    for _f in compact.py retro-run.sh retro-maybe.sh retro-notify.sh install-backstop.sh doctor.sh prompt.md WORKFLOW.md; do
+      mv "$_tmp/$_f" "$RETRO_DIR/$_f"
+      [[ "$_f" == *.sh ]] && chmod +x "$RETRO_DIR/$_f"
+    done
+    touch "$_update_stamp"
+    log "weekly update: scripts refreshed from GitHub"
+  else
+    log "weekly update: GitHub unreachable — will retry next run"
+  fi
+  rm -rf "$_tmp"
+  unset _ok _f _tmp
+fi
+unset _update_stamp _repo_raw
+
 # Compact the unreviewed conversations since the last checkpoint (deterministic, free). Stamp the
 # 24h debounce only on success, so a crash/kill mid-run retries next turn instead of skipping.
 # Capture the feed path from compact.py's stdout (last line contains the path after the token count).
