@@ -62,14 +62,6 @@ Prints PASS/FAIL per step with the exact fix for anything broken.
 
 Scripts in `~/.claude/retro/` self-update from GitHub once a week — no action needed after the initial install.
 
-**Existing installs (before 2026-06-30)** don't have the auto-updater yet. Run setup.sh once to bootstrap it:
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/unify-apps/claude-code-learning/main/setup.sh)
-```
-
-Safe to re-run — idempotent, won't touch your token or hooks.
-
 ## Platform support
 
 | | macOS | Linux | Windows |
