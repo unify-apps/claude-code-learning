@@ -134,22 +134,19 @@ echo
 
 # ── 5. macOS notification permission (interactive only) ─────────────────────
 if command -v osascript >/dev/null 2>&1 && (( INTERACTIVE )); then
-    _macos_major=$(sw_vers -productVersion 2>/dev/null | cut -d. -f1 || echo "0")
     echo "── notification permission ──────────────────────────────────────────────────"
     echo "  Sending a test notification — you need to allow it in System Settings."
     osascript -e 'display notification "Allow notifications to see daily reviews." with title "Claude Code retro" sound name "Submarine"' 2>/dev/null || true
-    # terminal-notifier is broken on macOS 26 (Tahoe) and later — skip it there.
-    if command -v terminal-notifier >/dev/null 2>&1 && (( _macos_major > 0 && _macos_major < 26 )); then
+    if command -v terminal-notifier >/dev/null 2>&1; then
         terminal-notifier -title "Claude Code retro" -message "Allow notifications to see daily reviews." -sound "Submarine" 2>/dev/null || true
     fi
     sleep 3  # give macOS time to register the app before opening Settings
     open "x-apple.systempreferences:com.apple.preference.notifications" 2>/dev/null || true
     echo "  System Settings just opened. Enable notifications for:"
     echo "    → Script Editor   (Alert style: Banners or Temporary)"
-    if command -v terminal-notifier >/dev/null 2>&1 && (( _macos_major > 0 && _macos_major < 26 )); then
+    if command -v terminal-notifier >/dev/null 2>&1; then
         echo "    → terminal-notifier   (Alert style: Banners)"
     fi
-    unset _macos_major
     echo
     printf "  Press Enter once you've enabled them (or Enter to skip): "
     read -r _
