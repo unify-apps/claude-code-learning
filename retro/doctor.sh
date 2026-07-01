@@ -123,14 +123,16 @@ fi
 if command -v osascript >/dev/null 2>&1; then
   osascript -e 'display notification "If you see this banner, Script Editor notifications are working." with title "retro doctor ✓" sound name "Submarine"' >/dev/null 2>&1 || true
   note "macOS: a Script Editor test notification was just fired."
-  note "  ✓ saw a banner → notifications working."
+  note "  ✓ saw a banner → notifications working (guaranteed delivery path)."
   note "  ✗ no banner → System Settings → Notifications → Script Editor → Alert style: Banners/Temporary"
-  if command -v terminal-notifier >/dev/null 2>&1; then
-    terminal-notifier -title "retro doctor ✓" -message "If you see this, terminal-notifier notifications are working." -sound "Submarine" >/dev/null 2>&1 || true
-    note "macOS: a terminal-notifier test notification was also fired (clickable review notifications)."
-    note "  ✓ saw a banner → terminal-notifier working — click action will open review in Finder."
-    note "  ✗ no banner → System Settings → Notifications → terminal-notifier → Alert style: Banners"
-  fi
+fi
+if command -v terminal-notifier >/dev/null 2>&1; then
+  terminal-notifier -title "retro doctor ✓" -message "If you see this, terminal-notifier notifications are working (clickable)." -sound "Submarine" >/dev/null 2>&1 || true
+  note "macOS: a terminal-notifier test notification was also fired."
+  note "  ✓ saw a banner → terminal-notifier working — reviews will also have a clickable 'open in Finder' action."
+  note "  ✗ no banner → System Settings → Notifications → terminal-notifier → Alert style: Banners"
+fi
+if command -v osascript >/dev/null 2>&1 || command -v terminal-notifier >/dev/null 2>&1; then
   note "  shortcut to open Notifications settings: open 'x-apple.systempreferences:com.apple.preference.notifications'"
 else
   note "non-macOS — system notifications skipped; in-Claude notification still works."

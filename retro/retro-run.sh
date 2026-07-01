@@ -157,6 +157,14 @@ with open(index_path, "w") as fh:
     fh.write(HEADER + "\n" + ordered + "\n")
 PY
 
+  # osascript fires on all macOS — guaranteed delivery regardless of terminal-notifier health.
+  # terminal-notifier adds a clickable "open in Finder" action on top when installed; it exits 0
+  # even when it delivers nothing (broken on some macOS versions), so we can't use it as the
+  # sole notifier without risking silent failure.
+  if command -v osascript >/dev/null 2>&1; then
+    osascript -e "display notification \"Open ~/.claude/retro/INDEX.md to read it.\" with title \"Claude Code retro\" subtitle \"Conversation review for ${DATE_TAG} ready\" sound name \"Submarine\"" >/dev/null 2>&1 || true
+    log "macOS notification sent via osascript — if no banner: System Settings → Notifications → Script Editor → Alert style: Banners/Temporary"
+  fi
   if command -v terminal-notifier >/dev/null 2>&1; then
     terminal-notifier \
       -title "Claude Code retro" \
@@ -164,9 +172,6 @@ PY
       -message "Click to open in Finder" \
       -execute "open -R \"${MD}\"" \
       -sound "Submarine" >/dev/null 2>&1 || true
-    log "macOS notification sent via terminal-notifier — if no banner: System Settings → Notifications → terminal-notifier → Alert style: Banners"
-  elif command -v osascript >/dev/null 2>&1; then
-    osascript -e "display notification \"Open ~/.claude/retro/INDEX.md to read it.\" with title \"Claude Code retro\" subtitle \"Conversation review for ${DATE_TAG} ready\" sound name \"Submarine\"" >/dev/null 2>&1 || true
-    log "macOS notification sent via osascript — if no banner: System Settings → Notifications → Script Editor → Alert style: Banners"
+    log "macOS notification sent via terminal-notifier (clickable) — if no banner: System Settings → Notifications → terminal-notifier → Alert style: Banners"
   fi
 fi
