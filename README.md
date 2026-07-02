@@ -21,7 +21,15 @@ compact.py (free)  →  claude -p review  →  ~/.claude/retro/conversation-revi
 
 ## Install
 
-### Step 1 — Add the plugin (inside Claude Code)
+Pick what you need — the two steps are independent:
+
+| Want | What to run |
+|---|---|
+| Automatic daily review | bash curl command (Step 2) |
+| On-demand manual review | plugin commands (Step 1) |
+| Both | Step 1 + Step 2 |
+
+### Step 1 — On-demand manual review (inside Claude Code)
 
 Run these three commands inside Claude Code:
 
@@ -33,7 +41,7 @@ Run these three commands inside Claude Code:
 
 `/claude-learning:review-conversations` is now available. Use it any time for an on-demand review.
 
-### Step 2 — Enable automatic daily review (normal terminal)
+### Step 2 — Automatic daily review (normal terminal)
 
 Open your normal terminal (not Claude Code) and run:
 
@@ -46,9 +54,7 @@ The script walks you through everything interactively:
 - Sets up the macOS daily LaunchAgent
 - Guides you through generating and pasting your auth token
 
-**Token step:** the script runs `claude setup-token` right in the same terminal window. A token starting with `sk-ant-oat...` will appear — copy it and paste it at the prompt that follows. The script explains each step before it happens.
-
-> Skip Step 2 if you only want on-demand reviews via `/claude-learning:review-conversations`.
+**Token step:** the script runs `claude setup-token` right in the same terminal window. A token starting with `sk-ant-oat...` will appear — click right before the `s` to select without the leading space, copy, then paste at the prompt that follows.
 
 ## Verify
 
