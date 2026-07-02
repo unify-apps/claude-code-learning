@@ -44,15 +44,14 @@ if [[ ! -f "$_update_stamp" ]] || find "$_update_stamp" -mtime +6 -print -quit 2
 fi
 unset _update_stamp _repo_raw
 
-# Compact the unreviewed conversations since the last checkpoint (deterministic, free). Stamp the
-# 24h debounce only on success, so a crash/kill mid-run retries next turn instead of skipping.
-# Capture the feed path from compact.py's stdout (last line contains the path after the token count).
-# Using compact.py's own output avoids a midnight edge case where DATE_TAG rolls before the feed is read.
+# Compact the unreviewed conversations since the last checkpoint (deterministic, free).
+# Stamp the 24h debounce only after the review is written — if the AI call fails (e.g. network
+# not ready at 10am after wake-from-sleep), the Stop hook retries on the next session close.
+# Re-running compact on retry is harmless: it's free, deterministic, and reads the same files.
 COMPACT_OUT=$(python3 "$SCRIPT_DIR/compact.py" 2>>"$RETRO_DIR/retro.log")
 COMPACT_EXIT=$?
 echo "$COMPACT_OUT" >> "$RETRO_DIR/retro.log"
 if [[ $COMPACT_EXIT -eq 0 ]]; then
-  touch "$STAMP"
   FEED=$(echo "$COMPACT_OUT" | grep -oE '[^ ]+conversations-[0-9-]+\.md' | tail -1 || true)
 else
   log "compact pass failed; will retry next turn"
@@ -86,8 +85,25 @@ MD="$RETRO_DIR/conversation-review-${DATE_TAG}.md"
 
 # Whole prompt (instruction + the compacted feed) via STDIN — the feed is far too big for an argv arg.
 # Runs from $HOME so no project CLAUDE.md or hooks are loaded — prevents the Stop hook re-firing.
-{ cat "$SCRIPT_DIR/prompt.md"; printf '\n\n--- CONVERSATION FEED (last 24h) ---\n'; cat "$FEED"; } \
-  | (cd "$HOME" && claude -p --output-format json) > "$ENVELOPE" 2>>"$RETRO_DIR/retro.log" || true
+# Retries up to 3 times on connectivity errors (handles LaunchAgent firing before network is ready
+# after wake-from-sleep — network typically comes up within 30-60s).
+_retries=3
+for _attempt in 1 2 3; do
+  { cat "$SCRIPT_DIR/prompt.md"; printf '\n\n--- CONVERSATION FEED (last 24h) ---\n'; cat "$FEED"; } \
+    | (cd "$HOME" && claude -p --output-format json) > "$ENVELOPE" 2>>"$RETRO_DIR/retro.log" || true
+  _conn_err=$(python3 -c "
+import json, sys
+try:
+    d = json.load(open('$ENVELOPE'))
+    r = d.get('result', '')
+    print('1' if d.get('is_error') and any(x in r for x in ['ConnectionRefused','Unable to connect','Connection closed']) else '0')
+except: print('0')
+" 2>/dev/null || echo "0")
+  [[ "$_conn_err" == "1" ]] && (( _attempt < _retries )) || break
+  log "AI review attempt $_attempt/$_retries failed (network not ready) — retrying in 30s"
+  sleep 30
+done
+unset _retries _attempt _conn_err
 
 # Write the report on success, or log an actionable error and clean up the half-files.
 python3 - "$ENVELOPE" "$MD" "$RETRO_DIR/retro.log" <<'PY'
@@ -116,10 +132,10 @@ except OSError: pass
 log(f"retro: wrote {md_path} (cost ${data.get('total_cost_usd')})")
 PY
 
-# Report written → advance the watermark (so these conversations aren't re-reviewed), refresh the
-# navigable entry points, and notify. All independent of any session hook, so they surface even in
-# a long-open session.
+# Report written → stamp the 24h debounce, advance the watermark, refresh navigable entry points,
+# and notify. All independent of any session hook, so they surface even in a long-open session.
 if [[ -f "$MD" ]]; then
+  touch "$STAMP"
   cp -f "$RETRO_DIR/.feed-max-ts" "$RETRO_DIR/.checkpoint" 2>/dev/null || true
 
   # Navigable entry points so reports aren't just buried date-stamped files in a hidden folder:
